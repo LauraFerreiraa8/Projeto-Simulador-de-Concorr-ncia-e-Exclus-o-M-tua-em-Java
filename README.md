@@ -4,41 +4,43 @@ Objetivo Este projeto foi desenvolvido para demonstrar na prática os conceitos 
 
 mkdir -p java_src
 
-cat > java_src/Impressora.java << EOF
-class Impressora {
-    // A Região Crítica é este método.
-    // O 'synchronized' garante que apenas UM Aluno use a impressora por vez.
-    public synchronized void imprimirDocumento(String nomeAluno, int paginas) {
-        System.out.println("\n[SISTEMA] " + nomeAluno + " começou a imprimir...");
+cat > java_src/SistemaTriagem.java << EOF
+class SistemaTriagem {
+    // Recurso Compartilhado: O nível de prioridade do paciente
+    private String prioridadeAtual = "Não Definida";
 
-        for (int i = 1; i <= paginas; i++) {
-            System.out.println(nomeAluno + " imprimindo página " + i + "...");
-            try {
-                Thread.sleep(500); // Simula o tempo da impressora funcionando
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+    // Região Crítica: Apenas um médico (Thread) pode atualizar por vez
+    public synchronized void atualizarPrioridade(String nomeMedico, String novaPrioridade) {
+        System.out.println("\n[LOG] Médico(a) " + nomeMedico + " acessando prontuário...");
+
+        // Simula o tempo de análise da foto/exame (como no seu protótipo de skin lesions)
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
-        System.out.println("[SISTEMA] " + nomeAluno + " FINALIZOU a impressão.");
+        this.prioridadeAtual = novaPrioridade;
+        System.out.println("[SISTEMA] Prioridade atualizada para: " + prioridadeAtual + " por " + nomeMedico);
     }
 }
 EOF
 
-cat > java_src/Aluno.java << EOF
-class Aluno extends Thread {
+cat > java_src/Medico.java << EOF
+class Medico extends Thread {
     private String nome;
-    private Impressora impressora;
+    private String analise;
+    private SistemaTriagem sistema;
 
-    public Aluno(String nome, Impressora impressora) {
+    public Medico(String nome, String analise, SistemaTriagem sistema) {
         this.nome = nome;
-        this.impressora = impressora;
+        this.analise = analise;
+        this.sistema = sistema;
     }
 
     @Override
     public void run() {
-        // Cada aluno tenta imprimir 3 páginas
-        impressora.imprimirDocumento(nome, 3);
+        sistema.atualizarPrioridade(nome, analise);
     }
 }
 EOF
@@ -46,15 +48,15 @@ EOF
 cat > java_src/Main.java << EOF
 public class Main {
     public static void main(String[] args) {
-        Impressora multifuncional = new Impressora();
+        SistemaTriagem prontoSocorro = new SistemaTriagem();
 
-        // Criando dois processos (Alunos) que compartilham a mesma impressora
-        Aluno aluno1 = new Aluno("Maria", multifuncional);
-        Aluno aluno2 = new Aluno("João", multifuncional);
+        // Simulação: Médico 1 analisa uma lesão leve, Médico 2 analisa uma emergência
+        Medico m1 = new Medico("Maria", "VERDE (Pouco Urgente)", prontoSocorro);
+        Medico m2 = new Medico("Dr. Silva", "VERMELHO (Emergência)", prontoSocorro);
 
-        System.out.println("--- Iniciando Fila de Impressão ---");
-        aluno1.start();
-        aluno2.start();
+        System.out.println("--- Início do Processamento de Triagem ---");
+        m1.start();
+        m2.start();
     }
 }
 EOF
